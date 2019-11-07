@@ -1,0 +1,101 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: flame
+  namespace: kh
+  labels:
+    app: flame-service
+  annotations:
+    etransafe.eu/base.url: /api/v1
+spec:
+  type: ClusterIP # during the development, LoadBalancer can be used to test the service. In production, only ClusterIP should be used here.
+  ports:
+  - port: 8000
+  selector:
+    app: flame-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flame-service
+  namespace: kh
+  labels:
+    app: flame-service
+  annotations:
+    etransafe.eu/base.url: /api/v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flame-service
+  template:
+    metadata:
+      labels:
+        app: flame-service
+    spec:
+      serviceAccountName: etransafe
+      volumes:
+      - name: flame-pv-volume
+        persistentVolumeClaim:
+          claimName: flame-pvc-claim
+      containers:
+      - name: flame-service
+        image: dockerhub.etransafe.eu:5111/manpas/test-of-new-project-upf:latest
+        # imagePullPolicy: Always - :latest tag already ensures updates when a new image is there
+        volumeMounts:
+        - mountPath: "/data"
+          name: flame-pv-volume
+        ports:
+        - containerPort: 8000
+        #env:
+        #  - name: BASE_HREF
+        #    value: /flame/
+        #  - name: ETS_AUTHENTICATION_API_URL
+        #    value: /etssp.kh.svc/auth/api/v1/login
+        #  - name: ETS_ENVIRONMENT
+        #    value: DEV
+        #  - name: ETS_GATEWAY_URL
+        #    value: https://dev.etransafe.130.226.24.120.nip.io
+        #  - name: ETS_KNOWLEDGE_HUB_REGISTRY_API_URL
+        #    value: registry.kh.svc
+        livenessProbe:
+          httpGet:
+            path: /api/v1/alive
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 60
+          timeoutSeconds: 1
+        readinessProbe:
+          httpGet:
+            path: /api/v1/ready
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 60
+      imagePullSecrets:
+      - name: dockerhub-etransafe-regcred
+---
+# Ambassador route for the service
+apiVersion: v1
+kind: Service
+metadata:
+  name: ets-flame-service-route
+  annotations:
+    getambassador.io/config: |
+      ---
+      apiVersion: ambassador/v1
+      kind:  Mapping
+      name:  ets-flame-service-mapping
+      prefix: /flame.kh.svc/
+      service: flame:8000
+      host_rewrite: flame.kh.svc
+      timeout_ms: 360000
+      connect_timeout_ms: 360000
+      idle_timeout_ms: 500000
+      retry_policy:
+        retry_on: "gateway-error"
+        num_retries: 10
+spec:
+  ports:
+  - name: ets-flame-service-port
+    port: 8000
+
