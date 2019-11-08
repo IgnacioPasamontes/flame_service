@@ -25,20 +25,13 @@ RUN apt-get update && \
 	python3-setuptools \
 	python3-pip \
 	nginx \
-	supervisor \
-	sqlite3 \
+    supervisor \
     libxrender-dev \
     libgl1-mesa-dev \
     nginx && \
     apt-get clean -y &&\
-	pip3 install -U pip setuptools && \
+	pip3 install -U setuptools && \
    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-
-COPY requirements_conda.txt .
-RUN conda install -c default -c rdkit --file requirements_conda.txt
-COPY requirements_pip.txt  .
-RUN pip3 install -r requirements_pip.txt 
 
 # cloning flame repo. First clone to get access to the environment.yml
 # then pull with commit changes awareness to rebuild from the next layer
@@ -46,16 +39,18 @@ RUN pip3 install -r requirements_pip.txt
 ADD https://api.github.com/repos/$USER/$REPO/git/refs/heads/$BRANCH version.json
 RUN git clone -b $BRANCH --single-branch https://github.com/$USER/$REPO.git &&\
     cd flame && \
-    pip install .
-   
+    conda env create -f environment.yml
+
 
 # hand activate conda environment
-#ENV PATH /opt/conda/envs/flame/bin:$PATH
+ENV PATH /opt/conda/envs/flame/bin:$PATH
 
 ADD https://api.github.com/repos/$USER/$WSREPO/git/refs/heads/master version.json
 RUN cd flame/ &&\
+    pip install . &&\
     cd /opt &&\
     git clone https://github.com/$USER/$WSREPO.git
+
 
 
 WORKDIR /opt/flame_API/flame_api
@@ -64,7 +59,20 @@ RUN mkdir /data/
 RUN cp -R /opt/flame/flame/models/ /data/
 RUN mkdir /data/spaces/
 RUN flame -c config -d /data
-RUN ls
+
+
+# setup all the configfiles
+RUN echo "daemon off;" >> /etc/nginx/nginx.conf
+COPY nginx-app.conf /etc/nginx/sites-available/default
+COPY supervisor-app.conf /etc/supervisor/conf.d/
+COPY uwsgi_params /opt/flame_API/flame_api/
+COPY uwsgi.ini /opt/flame_API/flame_api/
+
+
+
+
 EXPOSE 8000
 
-CMD [ "python", "manage.py" ,"runserver", "0.0.0.0:8000"]
+CMD ["supervisord", "-n"]
+#RUN python
+#CMD [ "python", "manage.py" ,"runserver", "0.0.0.0:8000"]
