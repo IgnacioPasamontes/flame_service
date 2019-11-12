@@ -16,30 +16,29 @@ ENV WSREPO=flame_API
 
 WORKDIR /opt
 
-# install dependencies for graphics needed in matplotlib and other python dependencies
+# Install dependencies for graphics needed in matplotlib and other python dependencies
 RUN apt-get update && \
     apt-get upgrade -y && \ 	
     apt-get install -y \
-	python3 \
-	python3-dev \
-	python3-setuptools \
-	python3-pip \
-	nginx \
-    supervisor \
+	#nginx \
+    #supervisor \
     libxrender-dev \
-    libgl1-mesa-dev \
-    nginx && \
+    libgl1-mesa-dev && \
     apt-get clean -y &&\
-	pip3 install -U setuptools && \
-   rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+	#pip3 install -U setuptools && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Install uwsgi
+#RUN pip3 install uwsgi
 
 # cloning flame repo. First clone to get access to the environment.yml
 # then pull with commit changes awareness to rebuild from the next layer
 # and avoid instaling all the libraries every build.
 ADD https://api.github.com/repos/$USER/$REPO/git/refs/heads/$BRANCH version.json
 RUN git clone -b $BRANCH --single-branch https://github.com/$USER/$REPO.git &&\
-    cd flame && \
-    conda env create -f environment.yml
+    cd flame
+COPY environment.yml .
+RUN  conda env create -f environment.yml
 
 
 # hand activate conda environment
@@ -52,7 +51,6 @@ RUN cd flame/ &&\
     git clone https://github.com/$USER/$WSREPO.git
 
 
-
 WORKDIR /opt/flame_API/flame_api
 
 RUN mkdir /data/
@@ -60,19 +58,17 @@ RUN cp -R /opt/flame/flame/models/ /data/
 RUN mkdir /data/spaces/
 RUN flame -c config -d /data
 
-
+RUN ls /opt/conda/envs/flame
 # setup all the configfiles
-RUN echo "daemon off;" >> /etc/nginx/nginx.conf
-COPY nginx-app.conf /etc/nginx/sites-available/default
-COPY supervisor-app.conf /etc/supervisor/conf.d/
-COPY uwsgi_params /opt/flame_API/flame_api/
-COPY uwsgi.ini /opt/flame_API/flame_api/
-
-
-
+RUN echo "daemon off;" >> /opt/conda/envs/flame/etc/nginx/nginx.conf
+COPY nginx-app.conf /opt/conda/envs/flame/etc/nginx/sites-available/default
+COPY supervisor-app.conf /opt/conda/envs/flame/etc/supervisord/conf.d/
+COPY uwsgi_params /opt/flame_API/
+COPY uwsgi.ini /opt/flame_API/
 
 EXPOSE 8000
-
-CMD ["supervisord", "-n"]
+#CMD ["/opt/conda/envs/flame/bin/nginx"]
+#CMD ["/opt/conda/envs/flame/bin/uwsgi", "--ini", "/opt/flame_API/uwsgi.ini"]
+CMD ["/opt/conda/envs/flame/bin/supervisord", "-n"]
 #RUN python
 #CMD [ "python", "manage.py" ,"runserver", "0.0.0.0:8000"]

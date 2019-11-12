@@ -2,6 +2,8 @@ name: flame
 channels:
   - default
   - rdkit
+  - conda-forge
+  - anaconda
 dependencies:
   - cherrypy=>18
   - numpy=>1.14.0
@@ -17,6 +19,9 @@ dependencies:
   - requests
   - pytest
   - psycopg2
+  - nginx
+  - supervisor
+  - uwsgi
   - pip:
      - django
      - djangorestframework

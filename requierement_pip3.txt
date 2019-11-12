@@ -1,0 +1,6 @@
+django
+djangorestframework
+django-cors-headers
+djangorestframework-yaml
+https://github.com/phi-grib/standardiser/archive/master.zip
+https://github.com/josecarlosgomezt/nonconformist/archive/master.zip
