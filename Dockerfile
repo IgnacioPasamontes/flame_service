@@ -65,10 +65,12 @@ COPY nginx-app.conf /opt/conda/envs/flame/etc/nginx/sites-available/default
 COPY supervisor-app.conf /opt/conda/envs/flame/etc/supervisord/conf.d/
 COPY uwsgi_params /opt/flame_API/
 COPY uwsgi.ini /opt/flame_API/
+RUN mkdir -p /opt/conda/envs/flame/var/run/nginx
 
 EXPOSE 8000
-#CMD ["/opt/conda/envs/flame/bin/nginx"]
-#CMD ["/opt/conda/envs/flame/bin/uwsgi", "--ini", "/opt/flame_API/uwsgi.ini"]
-CMD ["/opt/conda/envs/flame/bin/supervisord", "-n"]
+
+CMD ["/opt/conda/envs/flame/bin/nginx","-t -c ","/opt/conda/envs/flame/etc/nginx/sites-available/default"]
+CMD ["/opt/conda/envs/flame/bin/uwsgi", "--ini", "/opt/flame_API/uwsgi.ini"]
+#CMD ["supervisord", "-n"]
 #RUN python
 #CMD [ "python", "manage.py" ,"runserver", "0.0.0.0:8000"]
