@@ -60,17 +60,19 @@ RUN flame -c config -d /data
 
 RUN ls /opt/conda/envs/flame
 # setup all the configfiles
-RUN echo "daemon off;" >> /opt/conda/envs/flame/etc/nginx/nginx.conf
+#RUN echo "daemon off;" >> /opt/conda/envs/flame/etc/nginx/nginx.conf
 COPY nginx-app.conf /opt/conda/envs/flame/etc/nginx/sites-available/default
 COPY supervisor-app.conf /opt/conda/envs/flame/etc/supervisord/conf.d/
 COPY uwsgi_params /opt/flame_API/
 COPY uwsgi.ini /opt/flame_API/
 RUN mkdir -p /opt/conda/envs/flame/var/run/nginx
 
-EXPOSE 8000
+WORKDIR /opt/flame_API
 
-CMD ["/opt/conda/envs/flame/bin/nginx","-t -c ","/opt/conda/envs/flame/etc/nginx/sites-available/default"]
-CMD ["/opt/conda/envs/flame/bin/uwsgi", "--ini", "/opt/flame_API/uwsgi.ini"]
-#CMD ["supervisord", "-n"]
+EXPOSE 8080
+
+#CMD ["/opt/conda/envs/flame/bin/nginx","-c","/opt/conda/envs/flame/etc/nginx/sites-available/default"]
+#CMD ["/opt/conda/envs/flame/bin/uwsgi", "--ini", "/opt/flame_API/uwsgi.ini"]
+CMD ["supervisord", "-n"]
 #RUN python
 #CMD [ "python", "manage.py" ,"runserver", "0.0.0.0:8000"]
