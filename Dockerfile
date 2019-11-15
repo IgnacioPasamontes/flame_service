@@ -58,7 +58,6 @@ RUN cp -R /opt/flame/flame/models/ /data/
 RUN mkdir /data/spaces/
 RUN flame -c config -d /data
 
-RUN ls /opt/conda/envs/flame
 # setup all the configfiles
 #RUN echo "daemon off;" >> /opt/conda/envs/flame/etc/nginx/nginx.conf
 COPY nginx-app.conf /opt/conda/envs/flame/etc/nginx/sites-available/default
@@ -69,7 +68,7 @@ RUN mkdir -p /opt/conda/envs/flame/var/run/nginx
 
 WORKDIR /opt/flame_API
 
-EXPOSE 8080
+EXPOSE 8000
 
 #CMD ["/opt/conda/envs/flame/bin/nginx","-c","/opt/conda/envs/flame/etc/nginx/sites-available/default"]
 #CMD ["/opt/conda/envs/flame/bin/uwsgi", "--ini", "/opt/flame_API/uwsgi.ini"]
