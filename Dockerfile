@@ -68,18 +68,16 @@ RUN mkdir -p /opt/conda/envs/flame/var/run/nginx
 
 WORKDIR /opt/flame_API
 
-RUN conda install -c conda-forge nodejs 
-RUN npm install -g @angular/cli
+RUN conda install -c conda-forge nodejs
+RUN npm install npm@latest -g
 
 ADD https://api.github.com/repos/$USER/flameWeb/git/refs/heads/master version.json
 RUN git clone https://github.com/$USER/flameWeb.git
-RUN cd flameWeb
-RUN npom install
-RUN ng build --prod --base-href /flame.kh.svc/ --deploy-url /flame.kh.svc/static/ --output-hashing=none
-EXPOSE 8000
-
-#CMD ["/opt/conda/envs/flame/bin/nginx","-c","/opt/conda/envs/flame/etc/nginx/sites-available/default"]
-#CMD ["/opt/conda/envs/flame/bin/uwsgi", "--ini", "/opt/flame_API/uwsgi.ini"]
+WORKDIR /opt/flame_API/flameWeb
+RUN npm install
+RUN npm install -g @angular/cli
+COPY environment.prod_docker.ts src/environments/environment.prod.ts
+RUN ng build --prod --base-href /flame.kh.svc/ --deploy-url /flame.kh.svc/static/ --output-hashing=none --output-path=../flame_api/static/
+WORKDIR /opt/flame_API/flame_api
+RUN python manage.py collectstatic --noinput
 CMD ["supervisord", "-n"]
-#RUN python
-#CMD [ "python", "manage.py" ,"runserver", "0.0.0.0:8000"]
